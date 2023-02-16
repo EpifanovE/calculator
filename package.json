@@ -1,0 +1,30 @@
+{
+  "name": "calculator",
+  "private": false,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/calculator-lib.umd.js",
+  "module": "./dist/calculator-lib.es.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/calculator-lib.es.js",
+      "require": "./dist/calculator-lib.umd.js"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^18.13.0",
+    "path": "^0.12.7",
+    "typescript": "^4.9.3",
+    "vite": "^4.1.0",
+    "vite-plugin-dts": "^2.0.0-beta.0"
+  }
+}
