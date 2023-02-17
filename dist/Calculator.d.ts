@@ -12,7 +12,7 @@ type Params = {
     [key: string]: any;
 };
 type CalculatorConfig<T> = {
-    onChange: (value: number) => void;
+    onChange?: (value: number) => void;
     calculate?: (params?: T) => number;
 };
 export declare class Calculator<T extends Params> {
@@ -23,7 +23,7 @@ export declare class Calculator<T extends Params> {
     private _modifiers;
     private _params?;
     private _config?;
-    constructor(params: T, config: CalculatorConfig<T>);
+    constructor(params: T, config?: CalculatorConfig<T>);
     addModifier: (modifierConfig: ModifierConfig) => void;
     removeModifier: (id: number | string) => void;
     setParam: (name: keyof T, value: any) => void;

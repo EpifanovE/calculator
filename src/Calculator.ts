@@ -9,12 +9,13 @@ type ModifierConfig = {
     type: OperationType
     scope?: string
     priority?: number
+    multiplier?: number
 }
 
 type Params = { [key: string]: any }
 
 type CalculatorConfig<T> = {
-    onChange: (value: number) => void
+    onChange?: (value: number) => void
     calculate?: (params?: T) => number
 }
 
@@ -44,7 +45,7 @@ export class Calculator<T extends Params> {
 
     private _config?: CalculatorConfig<T>;
 
-    constructor(params: T, config: CalculatorConfig<T>) {
+    constructor(params: T, config?: CalculatorConfig<T>) {
         this._params = params;
         this._config = {...{}, ...config};
         this.calculate();
@@ -58,13 +59,22 @@ export class Calculator<T extends Params> {
         this.modifiers = this.modifiers.filter(modifier => modifier.id !== id);
     }
 
+    public changeModifier = (modifierConfig: ModifierConfig) => {
+        this.modifiers = [
+            ...this.modifiers.filter(modifier => modifier.id !== modifierConfig.id),
+            new Modifier(modifierConfig)
+        ];
+    }
+
     public setParam = (name: keyof T, value: any) => {
         this.params = {...this.params, [name]: value} as T;
     }
 
     public calculate = (): number => {
         const result = !!this._config?.calculate ? this._config.calculate(this.params) : this.calculatorCallback(this.params);
-        this._config?.onChange(result);
+        if (this._config?.onChange) {
+            this._config.onChange(result);
+        }
         return result;
     }
 
@@ -74,15 +84,15 @@ export class Calculator<T extends Params> {
         if (!params.price || !params.qty) return 0;
 
         return this.applyModifiers(
-            this.applyModifiers(params.price, this.modifiers.filter(modifier => modifier.scope === 'price').sort((a, b) => a.priority - b.priority)) * params.qty,
-            this.modifiers.filter(modifier => modifier.scope === 'total').sort((a, b) => a.priority - b.priority)
+            this.applyModifiers(params.price, this.modifiers.filter(modifier => modifier.scope === 'price' && !!modifier.config.value).sort((a, b) => a.priority - b.priority)) * params.qty,
+            this.modifiers.filter(modifier => modifier.scope === 'total' && !!modifier.config.value).sort((a, b) => a.priority - b.priority)
         );
     }
 
     private applyModifiers = (value: number, modifiers: Modifier[]): number => {
         return modifiers.reduce((acc: number, modifier: Modifier) => {
             return modifier.handle(acc);
-        }, value)
+        }, value);
     }
 }
 
@@ -95,6 +105,8 @@ export class Modifier {
     scope?: string
 
     priority: number = 10;
+
+    config: ModifierConfig
 
     private readonly operationStrategy: OperationStrategy;
 
@@ -109,6 +121,8 @@ export class Modifier {
         this.scope = config.scope;
 
         this.priority = config.priority || 10;
+
+        this.config = config;
 
         switch (config.operation) {
             case 'sub':
@@ -136,40 +150,48 @@ export class Modifier {
 
         if (!this.operationStrategy || !this.operationTypeStrategy) return value;
 
-        return this.operationStrategy.handle(value, this.operationTypeStrategy.handle(value, this.value || 0))
+        return this.operationStrategy.handle(value, {...this.config, value: this.operationTypeStrategy.handle(value, this.config)})
     }
 }
 
 type OperationStrategy = {
-    handle: (value: number, operationValue: number) => number
+    handle: (value: number, config: ModifierConfig) => number
 }
 
 const OperationAddStrategy: OperationStrategy = {
-    handle: (value: number, operationValue: number) => {
-        return value + operationValue;
+    handle: (value: number, config: ModifierConfig) => {
+        return value + config.value * (config?.multiplier || 1);
     }
 }
 
 const OperationSubStrategy: OperationStrategy = {
-    handle: (value: number, operationValue: number) => {
-        return value - operationValue;
+    handle: (value: number, config: ModifierConfig) => {
+        return value - config.value * (config?.multiplier || 1);
     }
 }
 
 const OperationMultipleStrategy: OperationStrategy = {
-    handle: (value: number, operationValue: number) => {
-        return value * operationValue;
+    handle: (value: number, config: ModifierConfig) => {
+        if (config?.multiplier === 0) {
+            return value;
+        }
+        return value * config.value * (config?.multiplier || 1);
     }
 }
 
 const OperationPercentStrategy: OperationStrategy = {
-    handle: (value: number, operationValue: number) => {
-        return value + (value * operationValue) / 100;
+    handle: (value: number, config: ModifierConfig) => {
+
+        if (config.operation && config.operation === 'multiple') {
+            return config.value / 100;
+        }
+
+        return value * config.value / 100;
     }
 }
 
 const OperationAbsoluteStrategy: OperationStrategy = {
-    handle: (_value: number, operationValue: number) => {
-        return operationValue;
+    handle: (_value: number, config: ModifierConfig) => {
+        return config.value;
     }
 }

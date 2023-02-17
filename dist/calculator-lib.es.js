@@ -18,7 +18,7 @@ class f {
     i(this, "calculate", () => {
       var e, a;
       const t = (e = this._config) != null && e.calculate ? this._config.calculate(this.params) : this.calculatorCallback(this.params);
-      return (a = this._config) == null || a.onChange(t), t;
+      return (a = this._config) != null && a.onChange && this._config.onChange(t), t;
     });
     i(this, "calculatorCallback", (t) => !t || !t.price || !t.qty ? 0 : this.applyModifiers(
       this.applyModifiers(t.price, this.modifiers.filter((e) => e.scope === "price").sort((e, a) => e.priority - a.priority)) * t.qty,
