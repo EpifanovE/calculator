@@ -7,6 +7,7 @@ type ModifierConfig = {
     type: OperationType;
     scope?: string;
     priority?: number;
+    multiplier?: number;
 };
 type Params = {
     [key: string]: any;
@@ -26,6 +27,7 @@ export declare class Calculator<T extends Params> {
     constructor(params: T, config?: CalculatorConfig<T>);
     addModifier: (modifierConfig: ModifierConfig) => void;
     removeModifier: (id: number | string) => void;
+    changeModifier: (modifierConfig: ModifierConfig) => void;
     setParam: (name: keyof T, value: any) => void;
     calculate: () => number;
     private calculatorCallback;
@@ -36,6 +38,7 @@ export declare class Modifier {
     value?: number;
     scope?: string;
     priority: number;
+    config: ModifierConfig;
     private readonly operationStrategy;
     private readonly operationTypeStrategy;
     constructor(config: ModifierConfig);

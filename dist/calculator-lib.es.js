@@ -1,30 +1,36 @@
 var o = Object.defineProperty;
-var n = (r, t, e) => t in r ? o(r, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : r[t] = e;
-var i = (r, t, e) => (n(r, typeof t != "symbol" ? t + "" : t, e), e);
-class f {
+var p = (i, t, e) => t in i ? o(i, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : i[t] = e;
+var r = (i, t, e) => (p(i, typeof t != "symbol" ? t + "" : t, e), e);
+class m {
   constructor(t, e) {
-    i(this, "_modifiers", []);
-    i(this, "_params");
-    i(this, "_config");
-    i(this, "addModifier", (t) => {
-      this.modifiers = [...this.modifiers, new p(t)];
+    r(this, "_modifiers", []);
+    r(this, "_params");
+    r(this, "_config");
+    r(this, "addModifier", (t) => {
+      this.modifiers = [...this.modifiers, new s(t)];
     });
-    i(this, "removeModifier", (t) => {
+    r(this, "removeModifier", (t) => {
       this.modifiers = this.modifiers.filter((e) => e.id !== t);
     });
-    i(this, "setParam", (t, e) => {
+    r(this, "changeModifier", (t) => {
+      this.modifiers = [
+        ...this.modifiers.filter((e) => e.id !== t.id),
+        new s(t)
+      ];
+    });
+    r(this, "setParam", (t, e) => {
       this.params = { ...this.params, [t]: e };
     });
-    i(this, "calculate", () => {
+    r(this, "calculate", () => {
       var e, a;
       const t = (e = this._config) != null && e.calculate ? this._config.calculate(this.params) : this.calculatorCallback(this.params);
       return (a = this._config) != null && a.onChange && this._config.onChange(t), t;
     });
-    i(this, "calculatorCallback", (t) => !t || !t.price || !t.qty ? 0 : this.applyModifiers(
-      this.applyModifiers(t.price, this.modifiers.filter((e) => e.scope === "price").sort((e, a) => e.priority - a.priority)) * t.qty,
-      this.modifiers.filter((e) => e.scope === "total").sort((e, a) => e.priority - a.priority)
+    r(this, "calculatorCallback", (t) => !t || !t.price || !t.qty ? 0 : this.applyModifiers(
+      this.applyModifiers(t.price, this.modifiers.filter((e) => e.scope === "price" && !!e.config.value).sort((e, a) => e.priority - a.priority)) * t.qty,
+      this.modifiers.filter((e) => e.scope === "total" && !!e.config.value).sort((e, a) => e.priority - a.priority)
     ));
-    i(this, "applyModifiers", (t, e) => e.reduce((a, s) => s.handle(a), t));
+    r(this, "applyModifiers", (t, e) => e.reduce((a, l) => l.handle(a), t));
     this._params = t, this._config = { ...e }, this.calculate();
   }
   get modifiers() {
@@ -40,20 +46,21 @@ class f {
     this._params = t, this.calculate();
   }
 }
-class p {
+class s {
   constructor(t) {
-    i(this, "id");
-    i(this, "value");
-    i(this, "scope");
-    i(this, "priority", 10);
-    i(this, "operationStrategy");
-    i(this, "operationTypeStrategy");
-    switch (this.id = t.id, this.value = t.value, this.scope = t.scope, this.priority = t.priority || 10, t.operation) {
+    r(this, "id");
+    r(this, "value");
+    r(this, "scope");
+    r(this, "priority", 10);
+    r(this, "config");
+    r(this, "operationStrategy");
+    r(this, "operationTypeStrategy");
+    switch (this.id = t.id, this.value = t.value, this.scope = t.scope, this.priority = t.priority || 10, this.config = t, t.operation) {
       case "sub":
-        this.operationStrategy = l;
+        this.operationStrategy = u;
         break;
       case "multiple":
-        this.operationStrategy = c;
+        this.operationStrategy = n;
         break;
       default:
         this.operationStrategy = h;
@@ -64,25 +71,25 @@ class p {
         this.operationTypeStrategy = d;
         break;
       default:
-        this.operationTypeStrategy = u;
+        this.operationTypeStrategy = y;
         break;
     }
   }
   handle(t) {
-    return !this.operationStrategy || !this.operationTypeStrategy ? t : this.operationStrategy.handle(t, this.operationTypeStrategy.handle(t, this.value || 0));
+    return !this.operationStrategy || !this.operationTypeStrategy ? t : this.operationStrategy.handle(t, { ...this.config, value: this.operationTypeStrategy.handle(t, this.config) });
   }
 }
 const h = {
-  handle: (r, t) => r + t
-}, l = {
-  handle: (r, t) => r - t
-}, c = {
-  handle: (r, t) => r * t
-}, d = {
-  handle: (r, t) => r + r * t / 100
+  handle: (i, t) => i + t.value * ((t == null ? void 0 : t.multiplier) || 1)
 }, u = {
-  handle: (r, t) => t
+  handle: (i, t) => i - t.value * ((t == null ? void 0 : t.multiplier) || 1)
+}, n = {
+  handle: (i, t) => (t == null ? void 0 : t.multiplier) === 0 ? i : i * t.value * ((t == null ? void 0 : t.multiplier) || 1)
+}, d = {
+  handle: (i, t) => t.operation && t.operation === "multiple" ? t.value / 100 : i * t.value / 100
+}, y = {
+  handle: (i, t) => t.value
 };
 export {
-  f as Calculator
+  m as Calculator
 };
